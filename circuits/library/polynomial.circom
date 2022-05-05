@@ -34,9 +34,6 @@ template Polynomial(NUM_OF_COEFFICIENTS, NUM_OF_SHARES) {
     temp[i] = 0;
     for(var j = 0; j < NUM_OF_COEFFICIENTS; j++) {
       temp[i] = temp[i] + (coefficients[j] * powers[i][j]);
-      // log(temp[i]);
-      // log(powers[i+1][j]);
-      // log(coefficients[j]);
     }
   }
 

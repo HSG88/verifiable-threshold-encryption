@@ -1,7 +1,7 @@
 pragma circom 2.0.3;
-include "./library/encrypt.circom";
-include "./library/commitment.circom";
-include "./library/polynomial.circom";
+include "./encrypt.circom";
+include "./commitment.circom";
+include "./polynomial.circom";
 
 template VerifiableThreshold(MESSAGE_SIZE, NUM_OF_COEFFICIENTS, NUM_OF_SHARES) {
   signal input coefficients[NUM_OF_COEFFICIENTS];
@@ -16,7 +16,7 @@ template VerifiableThreshold(MESSAGE_SIZE, NUM_OF_COEFFICIENTS, NUM_OF_SHARES) {
   encrypt.key <== coefficients[0];
   encrypt.iv <== iv;
   for(var i = 0; i < MESSAGE_SIZE; i++) {
-    encrypt.message[i] <== message[i];
+    encrypt.message[i] <== message[i]; // 31 bytes
     encrypt.ciphertext[i] <== ciphertext[i];
   }
 
@@ -24,7 +24,7 @@ template VerifiableThreshold(MESSAGE_SIZE, NUM_OF_COEFFICIENTS, NUM_OF_SHARES) {
   for(var i = 0; i < NUM_OF_COEFFICIENTS; i++) {
     polynomial.coefficients[i] <== coefficients[i];
   }
-
+  // x=1, y= , x =2, y, .. 
   component commits[NUM_OF_SHARES];
   for(var i = 0; i < NUM_OF_SHARES; i++) {
     polynomial.shares[i] <== shares[i];
@@ -34,7 +34,3 @@ template VerifiableThreshold(MESSAGE_SIZE, NUM_OF_COEFFICIENTS, NUM_OF_SHARES) {
     commits[i].commitment === commitments[i];
   }
 }
-// Encrypt 31 bytes x 34 = 1054 bytes
-// Coefficients = 6
-// Shares = 10
-component main{public [ciphertext, commitments]} = VerifiableThreshold(34, 6, 10);

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable no-plusplus */
 import {
   encode, encrypt, evaluatePolynomial, genRandomBigInt, poseidonCommitment,
@@ -80,7 +81,7 @@ describe('Circuits', async () => {
   });
   it('Should ensure the correctness of verifiable threshold encryption', async () => {
     const circuit = await tester(
-      './circuits/main.circom',
+      './circuits/main_1kb.circom',
       { reduceConstraints: false },
     );
     const array = new Uint8Array(31 * 34); // almost 1-Kbytes of data

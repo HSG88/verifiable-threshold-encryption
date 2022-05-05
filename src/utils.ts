@@ -28,18 +28,17 @@ function genRandomBigInt(): bigint {
 
 function encrypt(key: bigint, message: bigint[]): Ciphertext {
   const iv = mimc7.hash(genRandomBigInt(), 91) % PRIME;
-  const ciphertext = message.map((e: bigint, i: number): bigint => (e
-  + mimc7.hash(iv + BigInt(i), key, 91)) % PRIME);
+  const ciphertext = message.map((e: bigint, i: number): bigint => F.e(
+    e + mimc7.hash(iv + BigInt(i), key, 91),
+  ));
   return { ciphertext, iv };
 }
 
 function decrypt(key: bigint, cipher: Ciphertext): bigint[] {
-  const message = [];
   const { ciphertext, iv } = cipher;
-  for (let i = 0; i < ciphertext.length; i++) {
-    message.push(ciphertext[i] - mimc7.hash(iv + BigInt(i), key, 91));
-  }
-  return message;
+  return ciphertext.map(
+    (e: bigint, i: number): bigint => F.e(e - mimc7.hash(iv + BigInt(i), key, 91)),
+  );
 }
 
 function encode(buffer: Buffer):bigint[] {
