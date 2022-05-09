@@ -1,5 +1,5 @@
 pragma circom 2.0.3;
-include "../../node_modules/circomlib/circuits/mimc.circom";
+include "../../node_modules/circomlib/circuits/poseidon.circom";
 
 template Encrypt(MESSAGE_SIZE) {
   signal input key;
@@ -7,11 +7,17 @@ template Encrypt(MESSAGE_SIZE) {
   signal input message[MESSAGE_SIZE];
   signal input ciphertext[MESSAGE_SIZE];
 
-  component mimc[MESSAGE_SIZE];
-  for(var i=0; i<MESSAGE_SIZE; i++) {
-    mimc[i] = MiMC7(91);
-    mimc[i].x_in <== iv + i;
-    mimc[i].k <== key;
-    ciphertext[i] === message[i] + mimc[i].out;
+  component blocks[MESSAGE_SIZE];
+
+  blocks[0] = Poseidon(2);
+  blocks[0].inputs[0] <== key;
+  blocks[0].inputs[1] <== iv;
+  ciphertext[0] === blocks[0].out + message[0];
+
+  for(var i=1; i<MESSAGE_SIZE; i++) {
+    blocks[i] = Poseidon(2);
+    blocks[i].inputs[0] <== key;
+    blocks[i].inputs[1] <== ciphertext[i-1];
+    ciphertext[i] === message[i] + blocks[i].out;
   }
 }

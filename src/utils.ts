@@ -2,7 +2,7 @@
 /* eslint-disable no-bitwise */
 import { ZqField } from 'ffjavascript';
 
-const { mimc7, poseidon } = require('circomlibjs');
+const { poseidon } = require('circomlibjs');
 
 export type Ciphertext = {ciphertext: bigint[], iv: bigint};
 
@@ -27,18 +27,23 @@ function genRandomBigInt(): bigint {
 }
 
 function encrypt(key: bigint, message: bigint[]): Ciphertext {
-  const iv = mimc7.hash(genRandomBigInt(), 91) % PRIME;
-  const ciphertext = message.map((e: bigint, i: number): bigint => F.e(
-    e + mimc7.hash(iv + BigInt(i), key, 91),
-  ));
+  const iv = genRandomBigInt();
+  const ciphertext = [];
+  ciphertext.push(F.add(poseidon([key, iv]), message[0]));
+  for (let i = 1; i < message.length; i++) {
+    ciphertext.push(F.add(poseidon([key, ciphertext[i - 1]]), message[i]));
+  }
   return { ciphertext, iv };
 }
 
 function decrypt(key: bigint, cipher: Ciphertext): bigint[] {
   const { ciphertext, iv } = cipher;
-  return ciphertext.map(
-    (e: bigint, i: number): bigint => F.e(e - mimc7.hash(iv + BigInt(i), key, 91)),
-  );
+  const message = [];
+  message.push(F.sub(ciphertext[0], poseidon([key, iv])));
+  for (let i = 1; i < ciphertext.length; i++) {
+    message.push(F.sub(ciphertext[i], poseidon([key, ciphertext[i - 1]])));
+  }
+  return message;
 }
 
 function encode(buffer: Buffer):bigint[] {
