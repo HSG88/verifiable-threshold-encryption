@@ -1,22 +1,24 @@
 pragma circom 2.0.3;
-
-template Powers(EXPONENT) {
-  signal input x;
-  signal output out[EXPONENT];
-
-  out[0] <== 1;
-  for(var i = 1; i < EXPONENT; i++) {
-    out[i] <== out[i-1] * x;
-  }
-}
+include "./encryptShare.circom";
+include "../../node_modules/circomlib/circuits/poseidon.circom";
 
 template Polynomial(NUM_OF_COEFFICIENTS, NUM_OF_SHARES) {
   assert(NUM_OF_COEFFICIENTS <= 11);
   assert(NUM_OF_SHARES <= 11);
-  // coefficient[0] is the secret
+  
+  // Public signals
+  signal input keyHash;
+  signal input encryptedShares[NUM_OF_SHARES];
+  signal input publicKeys[NUM_OF_SHARES][2];
+
+  // Private signals
   signal input coefficients[NUM_OF_COEFFICIENTS];
-  // a secret share is (i+1, share[i])
-  signal input shares[NUM_OF_SHARES];
+  signal input privateKey;
+
+  component hash = Poseidon(1);
+  hash.inputs[0] <== coefficients[0];
+  hash.out === keyHash;
+
   var powers[10][11] = [ 
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024],
@@ -37,7 +39,24 @@ template Polynomial(NUM_OF_COEFFICIENTS, NUM_OF_SHARES) {
     }
   }
 
+  component encrypt[NUM_OF_SHARES];
+
   for(var i=0; i<NUM_OF_SHARES; i++) {
-    shares[i] === temp[i];
+    encrypt[i] = EncryptShare();
+    encrypt[i].share <== temp[i];
+    encrypt[i].privateKey <== privateKey;
+    encrypt[i].publicKey[0] <== publicKeys[i][0];
+    encrypt[i].publicKey[1] <== publicKeys[i][1];
+    encrypt[i].out === encryptedShares[i];
+  }
+}
+
+template Powers(EXPONENT) {
+  signal input x;
+  signal output out[EXPONENT];
+
+  out[0] <== 1;
+  for(var i = 1; i < EXPONENT; i++) {
+    out[i] <== out[i-1] * x;
   }
 }

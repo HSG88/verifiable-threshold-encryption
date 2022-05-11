@@ -1,7 +1,4 @@
 pragma circom 2.0.3;
-include "./library/main.circom";
+include "./library/encryption.circom";
 
-// Encrypt 31 bytes x 34 x 4 = 4kb
-// Coefficients = 6
-// Shares = 10
-component main{public [ciphertext, commitments]} = VerifiableThreshold(34*4, 6, 10);
+component main{public [keyHash, ciphertext, iv]} = Encryption(34*4);

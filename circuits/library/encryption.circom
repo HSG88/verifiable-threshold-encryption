@@ -1,7 +1,7 @@
 pragma circom 2.0.3;
 include "../../node_modules/circomlib/circuits/poseidon.circom";
 
-template Encrypt(MESSAGE_SIZE) {
+template Encryption(MESSAGE_SIZE) {
   // Public signals
   signal input keyHash;
   signal input ciphertext[MESSAGE_SIZE];
