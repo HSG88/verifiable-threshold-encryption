@@ -16,7 +16,7 @@ describe('Utils', () => {
     expect(buf1).to.eql(buf2);
   });
 
-  it.only('Should encrypt/decrypt correctly', async () => {
+  it('Should encrypt/decrypt correctly', async () => {
     const array = new Uint8Array(31);
     for (let i = 0; i < array.length; i++) {
       array[i] = i;

@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "clean": "rm -fR dist",
+    "build": "npm run clean && ./node_modules/.bin/tsc --strictNullChecks",
     "lint": "npx eslint \"src/**\" \"test/**\" --fix",
     "test": "npm run lint &&  mocha --exit --timeout 30000 --require ts-node/register 'test/*.test.ts'"
   },
@@ -27,7 +28,7 @@
     "mocha": "^9.2.0",
     "ts-node": "^10.4.0",
     "typedoc": "^0.22.11",
-    "typescript": "^4.5.5"
+    "typescript": "^4.6.4"
   },
   "dependencies": {
     "circomlibjs": "^0.0.8",

@@ -1,8 +1,11 @@
 /* eslint-disable no-plusplus */
 /* eslint-disable no-bitwise */
 import { ZqField } from 'ffjavascript';
+import { KeyPair, Point } from './types';
 
-const { poseidon } = require('circomlibjs');
+const crypto = require('crypto');
+
+const { poseidon, babyjub } = require('circomlibjs');
 
 export type Ciphertext = {ciphertext: bigint[], iv: bigint};
 
@@ -22,13 +25,35 @@ const powers = [
   [1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 1000000000, 10000000000, 100000000000],
 ];
 
+function toBigInt(buffer: Buffer): bigint {
+  let result = 0n;
+  buffer.forEach((i) => {
+    result = (result << 8n) + BigInt(i);
+  });
+  return result;
+}
+
+function genKeyPair(): KeyPair {
+  const random = crypto.randomBytes(32);
+  random[0] &= 0xF8;
+  random[31] &= 0x7F;
+  random[31] |= 0x40;
+  const privateKey = toBigInt(random) >> 3n;
+  const publicKey = babyjub.mulPointEscalar(babyjub.Base8, privateKey);
+  return { privateKey, publicKey };
+}
+
 function genRandomBigInt(): bigint {
   return F.random();
 }
 
+function ecdh(sk: bigint, pk:Point): bigint {
+  const shared = babyjub.mulPointEscalar(pk, sk);
+  return poseidon(shared);
+}
 function encrypt(key: bigint, message: bigint[]): Ciphertext {
   const iv = genRandomBigInt();
-  const ciphertext = [];
+  const ciphertext: bigint[] = [];
   ciphertext.push(F.add(poseidon([key, iv]), message[0]));
   for (let i = 1; i < message.length; i++) {
     ciphertext.push(F.add(poseidon([key, ciphertext[i - 1]]), message[i]));
@@ -38,7 +63,7 @@ function encrypt(key: bigint, message: bigint[]): Ciphertext {
 
 function decrypt(key: bigint, cipher: Ciphertext): bigint[] {
   const { ciphertext, iv } = cipher;
-  const message = [];
+  const message: bigint[] = [];
   message.push(F.sub(ciphertext[0], poseidon([key, iv])));
   for (let i = 1; i < ciphertext.length; i++) {
     message.push(F.sub(ciphertext[i], poseidon([key, ciphertext[i - 1]])));
@@ -48,7 +73,7 @@ function decrypt(key: bigint, cipher: Ciphertext): bigint[] {
 
 function encode(buffer: Buffer):bigint[] {
   if (buffer.length % 31 !== 0) { throw new Error('Buffer length must multiple of 31'); }
-  const data = [];
+  const data: bigint[] = [];
   const length = buffer.length / 31;
   for (let i = 0; i < length; i++) {
     data.push(BigInt(`0x${buffer.slice(i * 31, (i + 1) * 31).toString('hex')}`));
@@ -57,15 +82,12 @@ function encode(buffer: Buffer):bigint[] {
 }
 
 function decode(data: bigint[]):Buffer {
-  const array = [];
+  const array: Buffer[] = [];
   for (let i = 0; i < data.length; i++) {
     const str = data[i].toString(16).padStart(62, '0');
     array.push(Buffer.from(str, 'hex'));
   }
   return Buffer.concat(array);
-}
-function poseidonCommitment(value: bigint, randomness: bigint): bigint {
-  return poseidon([value, randomness]);
 }
 
 function evaluatePolynomial(coefficients: bigint[], x: bigint) : bigint {
@@ -81,7 +103,10 @@ function evaluatePolynomial(coefficients: bigint[], x: bigint) : bigint {
 
 export {
   PRIME,
-  poseidonCommitment,
+  F,
+  genKeyPair,
+  ecdh,
+  poseidon,
   genRandomBigInt,
   encrypt,
   decrypt,

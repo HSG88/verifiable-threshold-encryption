@@ -13,14 +13,14 @@ POT=../../../pot20.ptau
 echo "Compiling circuits"
 for FILE in ../circuits/*.circom; 
 do 
-  circom $FILE --r1cs
+  circom $FILE --r1cs --wasm
 done
 
 echo "Generating initial zkeys"
 for FILE in ./*.r1cs; 
 do 
   ZKEY="${FILE%.*}.zkey"
-  VKEY="${FILE%.*}.vkey.json"
+  VKEY="${FILE%.*}.vkey"
 
  snarkjs g16s $FILE $POT $ZKEY
 snarkjs zkev $ZKEY $VKEY

@@ -20,7 +20,7 @@
   },
   "include": [
     "src/**/*.ts"
-],
+, "example.ts"],
 "exclude": [
     "node_modules"
 ]
