@@ -1,17 +1,19 @@
 /* eslint-disable no-plusplus */
 import { expect } from 'chai';
 import { groth16 } from 'snarkjs';
-import { KeyPair } from '../src/types';
+import { KeyPair, Point } from '../src/types';
 import {
+  decode,
+  decrypt,
   ecdh, encode, encrypt, evaluatePolynomial, F, genKeyPair,
-  genRandomBigInt, poseidon,
+  genRandomBigInt, poseidon, recoverSecret,
 } from '../src/utils';
 
 const fs = require('fs');
 const crypto = require('crypto');
 
 describe('Example', () => {
-  it.only('Should verifiably secret share a key and encrypt a message', async () => {
+  it('Should verifiably secret share a key, encrypt a message, reconstruct the key and decrypt the ciphertext', async () => {
   // 0. Create key-pair for the dealer
     const dealerKeys = genKeyPair();
 
@@ -63,13 +65,11 @@ describe('Example', () => {
       privateKey: dealerKeys.privateKey,
     };
 
-    console.time('Key sharing proof generation');
     const keySharingProof = await groth16.fullProve(
       polynomialInput,
       polynomialArtifacts.wasm,
       polynomialArtifacts.zkey,
     );
-    console.timeEnd('Key sharing proof generation');
 
     expect(await groth16.verify(
       polynomialArtifacts.vkey,
@@ -100,18 +100,34 @@ describe('Example', () => {
       message: encodedData,
     };
 
-    console.time('Verifiable encryption proof generation');
     const encryptionProof = await groth16.fullProve(
       encryptionInput,
       encryptionArtifacts.wasm,
       encryptionArtifacts.zkey,
     );
-    console.timeEnd('Verifiable encryption proof generation');
 
     expect(await groth16.verify(
       encryptionArtifacts.vkey,
       encryptionProof.publicSignals,
       encryptionProof.proof,
     ));
+
+    // 8. Decrypt t shares by the corresponding share holder private key
+    const points: Point[] = [];
+    for (let i = 0; i < threshold; i++) {
+    // Derive shared key between the dealer and holder i
+      const symmetricKey = ecdh(holders[i].privateKey, dealerKeys.publicKey);
+      // Encrypt share using Poseidon OTP
+      points.push([BigInt(i + 1), F.sub(encryptedShares[i], symmetricKey)]);
+    }
+
+    // 9. Recover shared key
+    const recoveredKey = recoverSecret(points);
+    expect(recoveredKey).to.eq(key);
+
+    // 10. Decrypt ciphertext
+    const decrypted = decrypt(key, { ciphertext, iv });
+    const decoded = decode(decrypted);
+    expect(decoded).to.eql(data);
   });
 });

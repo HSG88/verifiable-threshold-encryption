@@ -1,7 +1,8 @@
 /* eslint-disable no-plusplus */
 import { expect } from 'chai';
+import { Point } from '../src/types';
 import {
-  decode, decrypt, encode, encrypt, evaluatePolynomial, genRandomBigInt,
+  decode, decrypt, encode, encrypt, evaluatePolynomial, genRandomBigInt, recoverSecret,
 } from '../src/utils';
 
 describe('Utils', () => {
@@ -37,5 +38,23 @@ describe('Utils', () => {
     for (let i = 0; i < testCases.length; i++) {
       expect(evaluatePolynomial(coefficients, testCases[i][0])).eq(testCases[i][1]);
     }
+  });
+
+  it('Should recover secret from points', async () => {
+    const threshold = 2;
+    const n = 2;
+    // Generate polynomial
+    const coefficients: bigint[] = [];
+    for (let i = 0; i < threshold; i++) {
+      coefficients.push(genRandomBigInt());
+    }
+    // Compute n points
+    const points:Point[] = [];
+    for (let i = 0; i < n; i++) {
+      const x = BigInt(i + 1);
+      points.push([x, evaluatePolynomial(coefficients, x)]);
+    }
+    // Select t points and recover the secret coefficients[0]
+    expect(coefficients[0]).to.eq(recoverSecret(points.slice(0, threshold)));
   });
 });

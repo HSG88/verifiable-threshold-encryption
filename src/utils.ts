@@ -1,3 +1,4 @@
+/* eslint-disable no-continue */
 /* eslint-disable no-plusplus */
 /* eslint-disable no-bitwise */
 import { ZqField } from 'ffjavascript';
@@ -96,9 +97,21 @@ function evaluatePolynomial(coefficients: bigint[], x: bigint) : bigint {
   for (let i = 0; i < coefficients.length; i++) {
     const term = BigInt(powers[Number(x - 1n)][i]);
     y = F.add(y, F.mul(coefficients[i], term));
-    // console.log(`y: ${y}\nTerm:${term}\nCoefficient: ${coefficients[i]}`);
   }
   return y;
+}
+
+function recoverSecret(points: Point[]):bigint {
+  let result = 0n;
+  for (let i = 0; i < points.length; i++) {
+    let temp = 1n;
+    for (let j = 0; j < points.length; j++) {
+      if (i === j) { continue; }
+      temp = F.mul(temp, F.div(points[j][0], F.sub(points[j][0], points[i][0])));
+    }
+    result = F.add(result, F.mul(points[i][1], temp));
+  }
+  return result;
 }
 
 export {
@@ -113,4 +126,5 @@ export {
   encode,
   decode,
   evaluatePolynomial,
+  recoverSecret,
 };
